@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DMart Agentic Shopper</title>
+    <style>
+      body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; }
+      header { padding: 16px 24px; background: #111827; border-bottom: 1px solid #1f2937; }
+      main { max-width: 980px; margin: 0 auto; padding: 24px; }
+      .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+      textarea { width: 100%; min-height: 90px; border-radius: 8px; border: 1px solid #334155; padding: 10px; }
+      input[type="text"], input[type="number"] {
+        border-radius: 8px; border: 1px solid #334155; padding: 8px 10px; background: #0b1220; color: #e2e8f0;
+        box-sizing: border-box;
+      }
+      .item-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+      .item-row .item-name { flex: 1 1 200px; min-width: 160px; }
+      .item-row .item-qty { width: 72px; flex: 0 0 auto; }
+      button { background: #10b981; border: none; color: #0b1120; padding: 10px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+      button.secondary { background: #334155; color: #e2e8f0; }
+      button.danger { background: #7f1d1d; color: #fecaca; padding: 8px 12px; }
+      .row-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+      .step { padding: 10px 0; border-bottom: 1px solid #1f2937; }
+      .step:last-child { border-bottom: none; }
+      .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #1f2937; color: #cbd5f5; margin-left: 8px; }
+      img { max-width: 100%; border-radius: 8px; margin-top: 8px; border: 1px solid #1f2937; }
+      pre { background: #0b1220; padding: 10px; border-radius: 8px; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>DMart Agentic Shopper</strong> <span class="pill">Flask + Selenium + Groq</span>
+    </header>
+    <main>
+      <div class="card">
+        <label>Shopping list</label>
+        <p style="margin: 8px 0 12px; color: #94a3b8; font-size: 14px;">
+          Add each item and quantity. The agent matches catalog products (higher-rated items win close ties).
+        </p>
+        <div id="item-list"></div>
+        <div class="row-actions">
+          <button type="button" class="secondary" id="add-item">Add item</button>
+          <button type="button" id="run">Run agent</button>
+        </div>
+        <label for="extra-notes" style="display:block; margin-top:16px;">Extra instructions (optional, e.g. &quot;Then checkout&quot;)</label>
+        <textarea id="extra-notes" placeholder="Then checkout."></textarea>
+      </div>
+
+      <div class="card" id="output">
+        <div>Steps will appear here.</div>
+      </div>
+    </main>
+
+    <script>
+      // #region agent log
+      document.addEventListener('DOMContentLoaded', function () {
+        fetch('http://127.0.0.1:7711/ingest/c946f0e7-9bbd-404b-8c39-f551243530bf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '49ae34' },
+          body: JSON.stringify({
+            sessionId: '49ae34',
+            location: 'index.html:DOMContentLoaded',
+            message: 'agent_ui_shell_loaded',
+            data: {
+              hasItemList: !!document.getElementById('item-list'),
+              hasRun: !!document.getElementById('run'),
+              title: document.title,
+            },
+            timestamp: Date.now(),
+            hypothesisId: 'H3',
+            runId: 'browser-shell',
+          }),
+        }).catch(function () {});
+      });
+      // #endregion
+      const output = document.getElementById('output');
+      const runBtn = document.getElementById('run');
+      const itemList = document.getElementById('item-list');
+      const extraNotes = document.getElementById('extra-notes');
+      let activeEs = null;
+
+      function addItemRow(name = '', qty = 1) {
+        const row = document.createElement('div');
+        row.className = 'item-row';
+        row.innerHTML = `
+          <input type="text" class="item-name" placeholder="Item (e.g. milk, atta)" value="${name.replace(/"/g, '&quot;')}" />
+          <input type="number" class="item-qty" min="1" value="${qty}" />
+          <button type="button" class="danger remove-row" title="Remove">×</button>
+        `;
+        row.querySelector('.remove-row').addEventListener('click', () => {
+          row.remove();
+          if (!itemList.querySelector('.item-row')) addItemRow();
+        });
+        itemList.appendChild(row);
+      }
+
+      function buildMessage() {
+        const parts = [...itemList.querySelectorAll('.item-row')]
+          .map((r) => {
+            const name = r.querySelector('.item-name').value.trim();
+            let q = parseInt(r.querySelector('.item-qty').value, 10);
+            if (!Number.isFinite(q) || q < 1) q = 1;
+            return name ? `${q} ${name}` : '';
+          })
+          .filter(Boolean);
+        let msg = parts.join(', ');
+        const notes = (extraNotes.value || '').trim();
+        if (notes) msg = msg ? `${msg}. ${notes}` : notes;
+        return msg.trim();
+      }
+
+      document.getElementById('add-item').addEventListener('click', () => addItemRow());
+
+      addItemRow('', 1);
+
+      function closeStream() {
+        if (activeEs) {
+          activeEs.close();
+          activeEs = null;
+        }
+        runBtn.disabled = false;
+      }
+
+      document.getElementById('run').addEventListener('click', () => {
+        const message = buildMessage();
+        if (!message) return;
+        closeStream();
+        runBtn.disabled = true;
+        output.innerHTML = '<div>Running (streaming)…</div>';
+
+        const url = `/api/shop/stream?message=${encodeURIComponent(message)}`;
+        const es = new EventSource(url);
+        activeEs = es;
+        output.innerHTML = '';
+
+        es.onmessage = (e) => {
+          if (e.data === '[DONE]') {
+            closeStream();
+            return;
+          }
+          let payload;
+          try {
+            payload = JSON.parse(e.data);
+          } catch {
+            closeStream();
+            output.innerHTML = `<div>Error: invalid stream data</div>`;
+            return;
+          }
+          if (payload.error) {
+            output.innerHTML = `<div>Error: ${payload.error}</div>`;
+            closeStream();
+            return;
+          }
+          if (payload.done) {
+            renderLlmUsage(payload.llm_usage);
+            closeStream();
+            return;
+          }
+          renderStep(payload);
+        };
+
+        es.onerror = () => {
+          if (activeEs === es) {
+            output.insertAdjacentHTML('beforeend', '<div class="step">Stream ended or connection error.</div>');
+            closeStream();
+          }
+        };
+      });
+
+      function renderStep(step) {
+        const el = document.createElement('div');
+        el.className = 'step';
+        const badge = step.llm ? '<span class="pill">LLM</span>' : '<span class="pill">NO LLM</span>';
+        el.innerHTML = `<strong>${step.step}</strong> ${badge}`;
+        const pre = document.createElement('pre');
+        pre.textContent = JSON.stringify(step, null, 2);
+        el.appendChild(pre);
+        if (step.screenshot) {
+          const img = document.createElement('img');
+          img.src = step.screenshot;
+          el.appendChild(img);
+        }
+        output.appendChild(el);
+      }
+
+      function renderLlmUsage(llmUsage) {
+        if (!llmUsage) return;
+        const el = document.createElement('div');
+        el.className = 'step';
+        el.innerHTML = '<strong>LLM usage</strong>';
+        const pre = document.createElement('pre');
+        pre.textContent = JSON.stringify(llmUsage, null, 2);
+        el.appendChild(pre);
+        output.appendChild(el);
+      }
+    </script>
+  </body>
+</html>
