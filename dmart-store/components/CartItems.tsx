@@ -90,6 +90,7 @@ export function CartItems({ initial }: { initial: CartResponse }) {
             data-product-id={item.productId}
             data-line-quantity={item.quantity}
             data-line-total={item.lineTotal}
+            data-product-mrp={item.mrp}
           >
             <div className="flex flex-1 gap-3">
               <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-100">

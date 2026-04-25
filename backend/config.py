@@ -14,6 +14,10 @@ SCREENSHOT_DIR = STATIC_DIR / "screenshots"
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 # GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b").strip()
+# Vision / OCR (shopping list photo) — set via GROQ_VISION_MODEL if your key uses another ID
+GROQ_VISION_MODEL = os.environ.get(
+    "GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct"
+).strip()
 
 DMART_BASE_URL = os.environ.get("DMART_BASE_URL", "http://127.0.0.1:3000").rstrip("/")
 

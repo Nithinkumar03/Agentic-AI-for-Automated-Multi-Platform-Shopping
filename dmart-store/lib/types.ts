@@ -27,6 +27,8 @@ export interface CartItemResponse {
   productId: string;
   name: string;
   price: number;
+  /** MRP per unit (for savings vs line total) */
+  mrp: number;
   quantity: number;
   image: string;
   lineTotal: number;

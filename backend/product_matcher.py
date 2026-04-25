@@ -58,6 +58,7 @@ def _rank_item(item: str, products: list[dict[str, Any]]) -> list[dict[str, Any]
                     "price": p.get("price"),
                     "unit": p.get("unit"),
                     "category": p.get("category"),
+                    "image": p.get("image") or p.get("imageUrl"),
                     "rating": round(rating, 2),
                     "text_score": round(score, 3),
                     "score": round(combined, 3),
@@ -115,7 +116,8 @@ def match_items(items: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
                 }
             )
         else:
-            prod = {k: top[k] for k in ("id", "name", "price", "unit", "category")}
+            keys = ("id", "name", "price", "unit", "category", "image")
+            prod = {k: top[k] for k in keys if k in top and top[k] is not None}
             if "rating" in top:
                 prod["rating"] = top["rating"]
             exact.append(

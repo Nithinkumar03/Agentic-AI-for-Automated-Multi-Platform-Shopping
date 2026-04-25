@@ -10,8 +10,8 @@ from typing import Any
 from flask import Flask, Response, jsonify, render_template, request, stream_with_context
 
 from browser_agent import BrowserAgent
-from config import SCREENSHOT_DIR
-from llm_brain import disambiguate, summarize_cart, suggest_alternative
+from config import DMART_BASE_URL, SCREENSHOT_DIR
+from llm_brain import disambiguate, extract_list_from_image, parse_speech_text, summarize_cart, suggest_alternative
 from nlp_parser import parse_grocery_list
 from product_matcher import get_catalog, get_categories, match_items
 from scraper import parse_cart_page
@@ -217,7 +217,53 @@ def index():
         f"ui-{int(time.time() * 1000)}",
     )
     # endregion
-    return render_template("index.html")
+    return render_template("index.html", dmart_base_url=DMART_BASE_URL)
+
+
+@app.route("/api/scan-list", methods=["POST"])
+def api_scan_list():
+    """Accept a shopping-list photo; return items extracted by Groq vision."""
+    f = request.files.get("image") or request.files.get("file")
+    if not f or not getattr(f, "filename", None):
+        return jsonify({"error": "upload an image (field: image or file)"}), 400
+    data = f.read() or b""
+    if not data:
+        return jsonify({"error": "empty file"}), 400
+    mime = getattr(f, "mimetype", None) or "image/jpeg"
+    if mime not in ("image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"):
+        if f.filename and f.filename.lower().endswith(".png"):
+            mime = "image/png"
+        elif f.filename and f.filename.lower().endswith((".jpg", ".jpeg")):
+            mime = "image/jpeg"
+        else:
+            return jsonify({"error": f"unsupported image type: {mime}"}), 400
+    if mime == "image/jpg":
+        mime = "image/jpeg"
+    try:
+        items = extract_list_from_image(data, mime)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"error": f"vision error: {e!s}"}), 500
+    return jsonify({"items": items})
+
+
+@app.route("/api/parse-speech", methods=["POST"])
+def api_parse_speech():
+    """Parse a speech transcript into structured items using the LLM."""
+    payload = request.get_json(silent=True) or {}
+    transcript = str(payload.get("transcript", "")).strip()
+    if not transcript:
+        return jsonify({"error": "transcript is required"}), 400
+    try:
+        items = parse_speech_text(transcript)
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"error": f"LLM error: {e!s}"}), 500
+    return jsonify({"items": items})
 
 
 @app.route("/api/shop", methods=["POST"])

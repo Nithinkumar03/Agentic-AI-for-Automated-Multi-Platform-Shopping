@@ -17,6 +17,7 @@ export function buildCartResponse(lines: CartLine[]): CartResponse {
       productId: line.productId,
       name: product.name,
       price: product.price,
+      mrp: product.mrp,
       quantity: line.quantity,
       image: product.image,
       lineTotal,

@@ -54,6 +54,11 @@ cd backend
 
 Open **`http://127.0.0.1:5001/`** (Flask). Port **8501** is Streamlit’s default; if you run Flask on 8501, leftover Streamlit tabs call `/_stcore/stream` and get 404 with no UI. Override with `FLASK_PORT` if needed. Ensure `DMART_BASE_URL` matches the store (default `http://127.0.0.1:3000`).
 
+## Photo shopping list (Groq vision)
+
+- Set `GROQ_VISION_MODEL` in `.env` if needed (default: `meta-llama/llama-4-scout-17b-16e-instruct` in `config.py`).
+- In the web UI, choose or capture a list image, then **Scan list**. Items are sent to `POST /api/scan-list` and the rows are filled from the model output.
+
 ## Demo prompts
 
 - `Add milk, atta, rice, and sunflower oil. Then checkout.`
@@ -73,7 +78,7 @@ Open **`http://127.0.0.1:5001/`** (Flask). Port **8501** is Streamlit’s defaul
 | `app.py` | Flask chat UI + orchestration |
 | `nlp_parser.py` | spaCy list parsing |
 | `product_matcher.py` | Catalog fetch + fuzzy match |
-| `llm_brain.py` | Groq disambiguation + summary |
+| `llm_brain.py` | Groq disambiguation + summary + **vision** (`extract_list_from_image` for list photos) |
 | `browser_agent.py` | Selenium add-to-cart, view cart, checkout |
 | `scraper.py` | BeautifulSoup cart parsing |
 

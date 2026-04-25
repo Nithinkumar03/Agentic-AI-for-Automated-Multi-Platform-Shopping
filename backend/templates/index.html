@@ -4,12 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>DMart Agentic Shopper</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <style>
-      body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; }
+      body { font-family: system-ui, Segoe UI, Arial, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; }
       header { padding: 16px 24px; background: #111827; border-bottom: 1px solid #1f2937; }
       main { max-width: 980px; margin: 0 auto; padding: 24px; }
       .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-      textarea { width: 100%; min-height: 90px; border-radius: 8px; border: 1px solid #334155; padding: 10px; }
+      textarea { width: 100%; min-height: 90px; border-radius: 8px; border: 1px solid #334155; padding: 10px; background: #0b1220; color: #e2e8f0; }
       input[type="text"], input[type="number"] {
         border-radius: 8px; border: 1px solid #334155; padding: 8px 10px; background: #0b1220; color: #e2e8f0;
         box-sizing: border-box;
@@ -18,26 +19,94 @@
       .item-row .item-name { flex: 1 1 200px; min-width: 160px; }
       .item-row .item-qty { width: 72px; flex: 0 0 auto; }
       button { background: #10b981; border: none; color: #0b1120; padding: 10px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
       button.secondary { background: #334155; color: #e2e8f0; }
       button.danger { background: #7f1d1d; color: #fecaca; padding: 8px 12px; }
-      .row-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-      .step { padding: 10px 0; border-bottom: 1px solid #1f2937; }
-      .step:last-child { border-bottom: none; }
-      .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #1f2937; color: #cbd5f5; margin-left: 8px; }
-      img { max-width: 100%; border-radius: 8px; margin-top: 8px; border: 1px solid #1f2937; }
-      pre { background: #0b1220; padding: 10px; border-radius: 8px; overflow: auto; }
+      .row-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+      .step-card {
+        padding: 14px; border-bottom: 1px solid #1f2937;
+        animation: fadeIn 0.35s ease;
+      }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+      .step-card:last-child { border-bottom: none; }
+      .step-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+      .step-title { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+      .check { color: #34d399; font-weight: bold; }
+      .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #1f2937; color: #cbd5f5; }
+      .pill.llm { background: #312e81; color: #c7d2fe; }
+      .step-body { color: #94a3b8; font-size: 14px; }
+      .product-chip { display: inline-flex; align-items: center; gap: 6px; background: #0b1220; border: 1px solid #334155; border-radius: 8px; padding: 6px 10px; margin: 4px 6px 4px 0; font-size: 13px; }
+      .product-chip img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
+      .muted { color: #64748b; font-size: 13px; }
+      .json-fallback { background: #0b1220; padding: 10px; border-radius: 8px; overflow: auto; font-size: 12px; color: #94a3b8; }
+      .step-shot { max-width: 100%; border-radius: 8px; margin-top: 8px; border: 1px solid #1f2937; }
+      .pre-inline { background: #0b1220; padding: 8px; border-radius: 8px; margin-top: 6px; font-size: 12px; }
+      .pipeline-wrap { margin-bottom: 12px; }
+      .pipeline-bar { height: 6px; background: #1f2937; border-radius: 999px; overflow: hidden; }
+      .pipeline-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 999px; transition: width 0.4s ease; }
+      .pipeline-labels { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-top: 6px; }
+      .pipeline-labels span.on { color: #34d399; font-weight: 600; }
+      .savings-card {
+        background: linear-gradient(135deg, #064e3b, #0f766e);
+        border: 1px solid #14b8a6;
+        border-radius: 12px; padding: 16px; margin-top: 10px;
+      }
+      .savings-card strong { color: #ecfdf5; font-size: 1.4rem; }
+      .llm-usage { font-size: 12px; color: #94a3b8; margin-top: 8px; }
+      .upload-zone {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0;
+        padding: 12px; background: #0b1220; border: 1px dashed #334155; border-radius: 10px;
+      }
+      .upload-zone img.preview { max-height: 80px; max-width: 120px; border-radius: 8px; object-fit: cover; border: 1px solid #334155; }
+      .input-hidden { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
+      .templates { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+      .templates button { font-size: 12px; padding: 8px 12px; }
+      .section-title { font-size: 1.1rem; font-weight: 700; color: #f1f5f9; margin: 0 0 4px; padding-bottom: 8px; border-bottom: 1px solid #1f2937; }
+      .section-desc { margin: 0 0 12px; }
+      .voice-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 8px 0 12px; }
+      @keyframes recPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); } 50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.15); } }
+      button.recording {
+        background: #dc2626; color: #fff;
+        animation: recPulse 1.5s ease-in-out infinite;
+      }
     </style>
   </head>
   <body>
+    <script>
+      window.__DMART_BASE__ = {{ dmart_base_url | tojson }};
+    </script>
     <header>
       <strong>DMart Agentic Shopper</strong> <span class="pill">Flask + Selenium + Groq</span>
     </header>
     <main>
-      <div class="card">
-        <label>Shopping list</label>
-        <p style="margin: 8px 0 12px; color: #94a3b8; font-size: 14px;">
-          Add each item and quantity. The agent matches catalog products (higher-rated items win close ties).
-        </p>
+      <div class="card" id="section-add">
+        <h2 class="section-title">1. Add items</h2>
+        <p class="section-desc muted">Add by photo, voice, or quick-fill. The agent matches catalog products (higher-rated items win close ties).</p>
+        <div class="upload-zone" id="photo-zone">
+          <input type="file" id="file-input" class="input-hidden" accept="image/*" />
+          <input type="file" id="camera-input" class="input-hidden" accept="image/*" capture="environment" />
+          <button type="button" class="secondary" id="pick-photo">Choose photo</button>
+          <button type="button" class="secondary" id="take-photo">Camera</button>
+          <img class="preview" id="photo-preview" alt="" style="display: none" />
+          <button type="button" id="scan-list" class="secondary" disabled>Scan list</button>
+        </div>
+        <p id="scan-status" class="muted" style="min-height: 1.2em"></p>
+        <div class="voice-row" id="voice-row">
+          <button type="button" class="secondary" id="voice-btn" title="Start/stop speech (Chrome/Edge)">Start Mic</button>
+          <button type="button" class="secondary" id="smart-parse-btn" disabled title="Re-parse full transcript with AI">Smart parse</button>
+          <span id="voice-hint" class="muted" style="font-size: 12px; flex: 1; min-width: 140px;"></span>
+        </div>
+        <div class="templates">
+          <span class="muted" style="align-self: center; margin-right: 4px;">Quick-fill:</span>
+          <button type="button" class="secondary" data-template="weekly">Weekly essentials</button>
+          <button type="button" class="secondary" data-template="party">Party supplies</button>
+          <button type="button" class="secondary" data-template="breakfast">Breakfast basics</button>
+        </div>
+      </div>
+
+      <div class="card" id="section-list">
+        <h2 class="section-title">2. Your shopping list</h2>
+        <p class="section-desc muted">Review and edit lines, add notes, then run the agent.</p>
         <div id="item-list"></div>
         <div class="row-actions">
           <button type="button" class="secondary" id="add-item">Add item</button>
@@ -48,152 +117,654 @@
       </div>
 
       <div class="card" id="output">
-        <div>Steps will appear here.</div>
+        <h2 class="section-title">3. Agent output</h2>
+        <p class="section-desc muted" style="margin-top: 0; margin-bottom: 12px;">Streamed steps when the agent runs.</p>
+        <div class="pipeline-wrap" id="pipeline-wrap" style="display: none">
+          <div class="pipeline-bar"><div class="pipeline-fill" id="pipeline-fill"></div></div>
+          <div class="pipeline-labels" id="pipeline-labels">
+            <span data-i="0">List</span>
+            <span data-i="1">Match</span>
+            <span data-i="2">Add to cart</span>
+            <span data-i="3">Review</span>
+          </div>
+        </div>
+        <div id="output-inner">Steps will appear here when you run the agent.</div>
       </div>
     </main>
 
     <script>
-      // #region agent log
-      document.addEventListener('DOMContentLoaded', function () {
-        fetch('http://127.0.0.1:7711/ingest/c946f0e7-9bbd-404b-8c39-f551243530bf', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '49ae34' },
-          body: JSON.stringify({
-            sessionId: '49ae34',
-            location: 'index.html:DOMContentLoaded',
-            message: 'agent_ui_shell_loaded',
-            data: {
-              hasItemList: !!document.getElementById('item-list'),
-              hasRun: !!document.getElementById('run'),
-              title: document.title,
-            },
-            timestamp: Date.now(),
-            hypothesisId: 'H3',
-            runId: 'browser-shell',
-          }),
-        }).catch(function () {});
-      });
-      // #endregion
-      const output = document.getElementById('output');
-      const runBtn = document.getElementById('run');
-      const itemList = document.getElementById('item-list');
-      const extraNotes = document.getElementById('extra-notes');
-      let activeEs = null;
+      (function () {
+        const TEMPLATES = {
+          weekly: [
+            { name: 'milk', qty: 2 },
+            { name: 'wheat atta', qty: 1 },
+            { name: 'basmati rice', qty: 1 },
+            { name: 'salt', qty: 1 },
+            { name: 'cooking oil', qty: 1 }
+          ],
+          party: [
+            { name: 'coke', qty: 2 },
+            { name: 'pepsi', qty: 2 },
+            { name: 'parle-g', qty: 2 },
+            { name: 'frooti', qty: 2 },
+            { name: 'chips or namkeen', qty: 1 }
+          ],
+          breakfast: [
+            { name: 'milk', qty: 1 },
+            { name: 'parle-g', qty: 1 },
+            { name: 'butter', qty: 1 },
+            { name: 'bread', qty: 1 }
+          ]
+        };
 
-      function addItemRow(name = '', qty = 1) {
-        const row = document.createElement('div');
-        row.className = 'item-row';
-        row.innerHTML = `
-          <input type="text" class="item-name" placeholder="Item (e.g. milk, atta)" value="${name.replace(/"/g, '&quot;')}" />
-          <input type="number" class="item-qty" min="1" value="${qty}" />
-          <button type="button" class="danger remove-row" title="Remove">×</button>
-        `;
-        row.querySelector('.remove-row').addEventListener('click', () => {
-          row.remove();
-          if (!itemList.querySelector('.item-row')) addItemRow();
-        });
-        itemList.appendChild(row);
-      }
+        const output = document.getElementById('output');
+        const outputInner = document.getElementById('output-inner');
+        const runBtn = document.getElementById('run');
+        const itemList = document.getElementById('item-list');
+        const extraNotes = document.getElementById('extra-notes');
+        const fileInput = document.getElementById('file-input');
+        const cameraInput = document.getElementById('camera-input');
+        const pickPhoto = document.getElementById('pick-photo');
+        const takePhoto = document.getElementById('take-photo');
+        const photoPreview = document.getElementById('photo-preview');
+        const scanListBtn = document.getElementById('scan-list');
+        const scanStatus = document.getElementById('scan-status');
+        const pipelineFill = document.getElementById('pipeline-fill');
+        const pipelineLabels = document.getElementById('pipeline-labels');
+        const pipelineWrap = document.getElementById('pipeline-wrap');
+        let activeEs = null;
+        let photoFile = null;
+        var fullTranscript = '';
+        const smartParseBtn = document.getElementById('smart-parse-btn');
+        const pipelineIndex = { parse: 0, match: 1, disambiguate: 1, suggest: 1, add_to_cart: 2, view_cart: 2, checkout: 2, summary: 3 };
 
-      function buildMessage() {
-        const parts = [...itemList.querySelectorAll('.item-row')]
-          .map((r) => {
+        function addItemRow(name, qty) {
+          const n = name == null ? '' : String(name);
+          const q = Number.isFinite(qty) && qty > 0 ? qty : 1;
+          const row = document.createElement('div');
+          row.className = 'item-row';
+          const esc = n.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+          row.innerHTML = `
+            <input type="text" class="item-name" placeholder="Item (e.g. milk, atta)" value="${esc}" />
+            <input type="number" class="item-qty" min="1" value="${q}" />
+            <button type="button" class="danger remove-row" title="Remove">×</button>
+          `;
+          row.querySelector('.remove-row').addEventListener('click', function () {
+            row.remove();
+            if (!itemList.querySelector('.item-row')) addItemRow('', 1);
+          });
+          itemList.appendChild(row);
+        }
+
+        function clearItemList() {
+          itemList.innerHTML = '';
+        }
+
+        function setItemsFromObjects(items) {
+          if (!Array.isArray(items) || !items.length) return;
+          clearItemList();
+          items.forEach(function (o) {
+            const name = o.item || o.name || '';
+            const qty = o.qty != null ? o.qty : o.quantity;
+            if (name) addItemRow(name, qty);
+          });
+          if (!itemList.querySelector('.item-row')) addItemRow('', 1);
+        }
+
+        function appendItemsFromObjects(items) {
+          if (!Array.isArray(items) || !items.length) return;
+          const rows = itemList.querySelectorAll('.item-row');
+          if (rows.length === 1) {
+            const n = rows[0].querySelector('.item-name').value.trim();
+            if (!n) rows[0].remove();
+          }
+          items.forEach(function (o) {
+            const name = o.item || o.name || '';
+            const qty = o.qty != null ? o.qty : o.quantity;
+            if (name) addItemRow(name, qty);
+          });
+          if (!itemList.querySelector('.item-row')) addItemRow('', 1);
+        }
+
+        function normalizeItemKey(s) {
+          return String(s || '')
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
+        }
+
+        function findRowByNormalizedName(key) {
+          const rows = itemList.querySelectorAll('.item-row');
+          for (var i = 0; i < rows.length; i++) {
+            const inp = rows[i].querySelector('.item-name');
+            if (normalizeItemKey(inp && inp.value) === key) return rows[i];
+          }
+          return null;
+        }
+
+        function appendOrMergeSpeechItems(items) {
+          if (!Array.isArray(items) || !items.length) return;
+          const rows0 = itemList.querySelectorAll('.item-row');
+          if (rows0.length === 1) {
+            const n0 = rows0[0].querySelector('.item-name').value.trim();
+            if (!n0) rows0[0].remove();
+          }
+          for (var j = 0; j < items.length; j++) {
+            const it = items[j];
+            const name = String(it.item || it.name || '').trim();
+            if (!name) continue;
+            const key = normalizeItemKey(name);
+            var qty = it.qty != null ? parseInt(String(it.qty), 10) : 1;
+            if (!Number.isFinite(qty) || qty < 1) qty = 1;
+            if (qty > 99) qty = 99;
+            const explicit = !!it.explicit;
+            const row = findRowByNormalizedName(key);
+            if (row) {
+              const qIn = row.querySelector('.item-qty');
+              var cur = parseInt(qIn.value, 10);
+              if (!Number.isFinite(cur) || cur < 1) cur = 1;
+              if (explicit) {
+                qIn.value = String(qty);
+              } else {
+                qIn.value = String(Math.min(99, cur + qty));
+              }
+            } else {
+              addItemRow(name, qty);
+            }
+          }
+          if (!itemList.querySelector('.item-row')) addItemRow('', 1);
+        }
+
+        var WORD_NUMS = {
+          one:1, two:2, three:3, four:4, five:5, six:6, seven:7,
+          eight:8, nine:9, ten:10, eleven:11, twelve:12
+        };
+        var WORD_NUM_PAT = 'one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve';
+        var FILLER_RE = /\b(i want|i need|i would like|give me|get me|please add|can you add|could you add|please|add)\b/gi;
+
+        function parseSpeechToItems(text) {
+          var raw = (text || '').trim();
+          if (!raw) return [];
+          raw = raw.replace(FILLER_RE, '').replace(/\s+/g, ' ').trim();
+          if (!raw) return [];
+          var parts = raw.split(/,|\band\b|;/i).map(function (s) { return s.trim(); }).filter(Boolean);
+          var wordLeadRe = new RegExp('^(' + WORD_NUM_PAT + ')\\s+(.+)$', 'i');
+          var wordTrailRe = new RegExp('^(.+?)\\s+(' + WORD_NUM_PAT + ')$', 'i');
+          var out = [];
+          for (var i = 0; i < parts.length; i++) {
+            var p = parts[i];
+            var lead = p.match(/^(\d+)\s+(.+)$/);
+            if (lead) {
+              out.push({ item: lead[2].trim(), qty: parseInt(lead[1], 10), explicit: true });
+              continue;
+            }
+            var wLead = p.match(wordLeadRe);
+            if (wLead) {
+              out.push({ item: wLead[2].trim(), qty: WORD_NUMS[wLead[1].toLowerCase()], explicit: true });
+              continue;
+            }
+            var trail = p.match(/^(.+?)\s+(\d+)$/);
+            if (trail) {
+              out.push({ item: trail[1].trim(), qty: parseInt(trail[2], 10), explicit: true });
+              continue;
+            }
+            var wTrail = p.match(wordTrailRe);
+            if (wTrail) {
+              out.push({ item: wTrail[1].trim(), qty: WORD_NUMS[wTrail[2].toLowerCase()], explicit: true });
+              continue;
+            }
+            out.push({ item: p, qty: 1, explicit: false });
+          }
+          return out;
+        }
+
+        function buildMessage() {
+          const parts = [].map.call(itemList.querySelectorAll('.item-row'), function (r) {
             const name = r.querySelector('.item-name').value.trim();
             let q = parseInt(r.querySelector('.item-qty').value, 10);
             if (!Number.isFinite(q) || q < 1) q = 1;
-            return name ? `${q} ${name}` : '';
+            return name ? (q + ' ' + name) : '';
+          }).filter(Boolean);
+          let msg = parts.join(', ');
+          const notes = (extraNotes.value || '').trim();
+          if (notes) msg = msg ? (msg + '. ' + notes) : notes;
+          return msg.trim();
+        }
+
+        function updatePipelineFromStep(step) {
+          const key = step && step.step;
+          if (!key) return;
+          const idx = pipelineIndex[key];
+          if (idx === undefined) return;
+          pipelineWrap.style.display = 'block';
+          const pct = { parse: 25, match: 50, disambiguate: 50, suggest: 50, add_to_cart: 66, view_cart: 88, checkout: 95, summary: 100 };
+          pipelineFill.style.width = (pct[key] != null ? pct[key] : 0) + '%';
+          for (var j = 0; j < 4; j++) {
+            const el = pipelineLabels.querySelector('[data-i="' + j + '"]');
+            if (el) el.className = j <= idx ? 'on' : '';
+          }
+        }
+
+        function resetPipeline() {
+          pipelineFill.style.width = '0%';
+          for (var j = 0; j < 4; j++) {
+            const el = pipelineLabels.querySelector('[data-i="' + j + '"]');
+            if (el) el.className = '';
+          }
+        }
+
+        let stepCounter = 0;
+        function renderStep(step) {
+          step._seq = stepCounter++;
+          const el = document.createElement('div');
+          el.className = 'step-card';
+          el.dataset.step = step.step;
+          const llmPill = step.llm
+            ? '<span class="pill llm">LLM</span>'
+            : '<span class="pill">No LLM</span>';
+          const head = document.createElement('div');
+          head.className = 'step-head';
+          head.innerHTML =
+            '<div class="step-title"><span class="check">&#10003;</span> <strong>' +
+            escapeHtml(String(step.step || 'step')) +
+            '</strong> ' +
+            llmPill +
+            '</div>';
+          el.appendChild(head);
+          const body = document.createElement('div');
+          body.className = 'step-body';
+          if (step.step === 'parse' && step.items) {
+            body.appendChild(
+              elFromHtml(
+                '<p>Parsed ' + step.items.length + ' line(s): ' +
+                step.items.map(function (i) { return i.qty + '× ' + escapeHtml(i.item); }).join(', ') + '</p>'
+              )
+            );
+          } else if (step.step === 'match' && step.results) {
+            const r = step.results;
+            const d = (r && r.debug_ranking) ? r.debug_ranking.length : 0;
+            const exact = (r && r.exact) ? r.exact.length : 0;
+            const amb = (r && r.ambiguous) ? r.ambiguous.length : 0;
+            const nf = (r && r.not_found) ? r.not_found.length : 0;
+            body.appendChild(
+              elFromHtml(
+                '<p>Exact: ' + exact + ' · Ambiguous: ' + amb + ' · Not found: ' + nf + '</p>'
+              )
+            );
+          } else if (step.step === 'disambiguate' && step.item) {
+            body.appendChild(
+              elFromHtml(
+                '<p>Resolved <em>' + escapeHtml(step.item) + '</em> using catalog candidates.</p>'
+              )
+            );
+            if (step.picked) {
+              const pre = document.createElement('div');
+              pre.className = 'pre-inline';
+              pre.textContent = JSON.stringify(step.picked, null, 2);
+              body.appendChild(pre);
+            }
+          } else if (step.step === 'suggest') {
+            body.appendChild(
+              elFromHtml('<p>Nothing in catalog for: <em>' + escapeHtml(step.item || '') + '</em></p>')
+            );
+            if (step.suggestion) {
+              const pre = document.createElement('div');
+              pre.className = 'pre-inline';
+              pre.textContent = JSON.stringify(step.suggestion, null, 2);
+              body.appendChild(pre);
+            }
+          } else if (step.step === 'add_to_cart' && step.product) {
+            const p = step.product;
+            const chip = document.createElement('div');
+            chip.className = 'product-chip';
+            const base = (window.__DMART_BASE__ || 'http://127.0.0.1:3000').replace(/\/$/, '');
+            const img = document.createElement('img');
+            img.src = p.image || (p.id ? (base + '/product-images/' + encodeURIComponent(p.id)) : '');
+            img.alt = p.name || '';
+            chip.appendChild(img);
+            const txt = document.createElement('span');
+            txt.textContent = (p.name || p.id) + ' ×' + (step.qty != null ? step.qty : 1);
+            chip.appendChild(txt);
+            body.appendChild(chip);
+            if (p.price != null) {
+              const pr = document.createElement('p');
+              pr.className = 'muted';
+              pr.textContent = '₹' + p.price + (p.unit ? ' / ' + p.unit : '');
+              body.appendChild(pr);
+            }
+          } else if (step.step === 'view_cart' && step.cart) {
+            const c = step.cart;
+            const lines = (c.items || [])
+              .map(function (i) { return escapeHtml((i.name || i.productId || '') + ' ×' + (i.quantity || 0)); })
+              .join(' · ');
+            body.appendChild(elFromHtml('<p>' + (lines || 'Cart viewed.') + '</p>'));
+            if (c.subtotal != null) {
+              body.appendChild(elFromHtml('<p><strong>Subtotal:</strong> ₹' + c.subtotal + '</p>'));
+            }
+            if (c.savings != null && c.savings > 0) {
+              const sav = document.createElement('div');
+              sav.className = 'savings-card';
+              sav.innerHTML =
+                '<p style="margin:0 0 8px; color: #a7f3d0; font-size: 13px;">You save vs MRP</p>' +
+                '<strong>₹' +
+                Number(c.savings).toFixed(0) +
+                '</strong>' +
+                (c.savingsPercent
+                  ? ' <span style="font-size: 14px; color: #a7f3d0">(' + c.savingsPercent + '% off MRP)</span>'
+                  : '') +
+                (c.totalMrp != null
+                  ? '<p class="muted" style="margin: 8px 0 0; font-size: 12px;">MRP total ~₹' + Number(c.totalMrp).toFixed(0) + '</p>'
+                  : '');
+              body.appendChild(sav);
+            }
+          } else if (step.step === 'checkout') {
+            body.appendChild(elFromHtml('<p>Checkout step completed.</p>'));
+            if (typeof confetti === 'function') {
+              confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+            }
+          } else if (step.step === 'summary' && step.summary) {
+            const s = step.summary;
+            body.appendChild(
+              elFromHtml(
+                '<p><strong>Summary</strong><br/>' + escapeHtml(s.summary || '') + '</p>' +
+                '<p class="muted">Items: ' + (s.itemCount != null ? s.itemCount : '—') + ' · Subtotal: ₹' + (s.subtotal != null ? s.subtotal : '—') + '</p>'
+              )
+            );
+          } else {
+            const pre = document.createElement('div');
+            pre.className = 'json-fallback';
+            pre.textContent = JSON.stringify(step, null, 2);
+            body.appendChild(pre);
+          }
+          el.appendChild(body);
+          if (step.screenshot) {
+            const img = document.createElement('img');
+            img.className = 'step-shot';
+            img.src = step.screenshot;
+            img.alt = 'screenshot';
+            el.appendChild(img);
+          }
+          outputInner.appendChild(el);
+          updatePipelineFromStep(step);
+        }
+
+        function elFromHtml(s) {
+          const d = document.createElement('div');
+          d.innerHTML = s;
+          return d;
+        }
+
+        function escapeHtml(s) {
+          return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+        }
+
+        function renderLlmUsage(llmUsage) {
+          if (!llmUsage) return;
+          const el = document.createElement('div');
+          el.className = 'step-card';
+          el.innerHTML = '<div class="step-title"><span class="check">&#10003;</span> <strong>LLM usage</strong></div>';
+          const p = document.createElement('p');
+          p.className = 'llm-usage';
+          p.textContent = JSON.stringify(llmUsage);
+          el.appendChild(p);
+          outputInner.appendChild(el);
+        }
+
+        function closeStream() {
+          if (activeEs) {
+            activeEs.close();
+            activeEs = null;
+          }
+          runBtn.disabled = false;
+        }
+
+        document.getElementById('add-item').addEventListener('click', function () { addItemRow('', 1); });
+        addItemRow('', 1);
+
+        document.querySelectorAll('.templates button[data-template]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const key = btn.getAttribute('data-template');
+            if (TEMPLATES[key]) setItemsFromObjects(TEMPLATES[key]);
+          });
+        });
+
+        pickPhoto.addEventListener('click', function () { fileInput.click(); });
+        takePhoto.addEventListener('click', function () { cameraInput.click(); });
+
+        function onFileSelected(file) {
+          if (!file || !file.type || file.type.indexOf('image/') !== 0) {
+            scanStatus.textContent = 'Please choose an image file.';
+            return;
+          }
+          photoFile = file;
+          const url = URL.createObjectURL(file);
+          photoPreview.src = url;
+          photoPreview.style.display = 'block';
+          scanListBtn.disabled = false;
+          scanStatus.textContent = 'Image ready. Tap “Scan list” to read items with Groq vision.';
+        }
+        fileInput.addEventListener('change', function () {
+          if (fileInput.files[0]) onFileSelected(fileInput.files[0]);
+        });
+        cameraInput.addEventListener('change', function () {
+          if (cameraInput.files[0]) onFileSelected(cameraInput.files[0]);
+        });
+
+        scanListBtn.addEventListener('click', function () {
+          if (!photoFile) return;
+          scanListBtn.disabled = true;
+          scanStatus.textContent = 'Scanning…';
+          const fd = new FormData();
+          fd.append('image', photoFile, photoFile.name || 'list.jpg');
+          fetch('/api/scan-list', { method: 'POST', body: fd })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (_ref) {
+              if (!_ref.ok) {
+                scanStatus.textContent = 'Error: ' + (_ref.j && _ref.j.error ? _ref.j.error : 'scan failed');
+                return;
+              }
+              const items = _ref.j.items;
+              if (items && items.length) {
+                setItemsFromObjects(items);
+                scanStatus.textContent = 'Loaded ' + items.length + ' item(s) from the photo.';
+              } else {
+                scanStatus.textContent = 'No items found — try a clearer photo.';
+              }
+            })
+            .catch(function (e) {
+              scanStatus.textContent = 'Request failed: ' + e;
+            })
+            .finally(function () { scanListBtn.disabled = !photoFile; });
+        });
+
+        (function initVoice() {
+          const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+          const voiceBtn = document.getElementById('voice-btn');
+          const voiceHint = document.getElementById('voice-hint');
+          if (!Rec) {
+            voiceBtn.disabled = true;
+            voiceHint.textContent = 'Voice not supported in this browser.';
+            return;
+          }
+          const rec = new Rec();
+          rec.lang = 'en-IN';
+          rec.continuous = true;
+          rec.interimResults = true;
+          var isRecording = false;
+
+          function setRecordingUi(active) {
+            isRecording = !!active;
+            if (active) {
+              voiceBtn.textContent = 'Stop Mic';
+              voiceBtn.classList.add('recording');
+              if (!voiceHint.textContent) voiceHint.textContent = 'Listening…';
+            } else {
+              voiceBtn.textContent = 'Start Mic';
+              voiceBtn.classList.remove('recording');
+            }
+          }
+
+          rec.onresult = function (e) {
+            var i;
+            var interim = '';
+            for (i = 0; i < e.results.length; i++) {
+              if (!e.results[i].isFinal) {
+                interim += (e.results[i][0] && e.results[i][0].transcript) || '';
+              }
+            }
+            for (i = e.resultIndex; i < e.results.length; i++) {
+              if (e.results[i].isFinal) {
+                var chunk = (e.results[i][0] && e.results[i][0].transcript) || '';
+                if (chunk.trim() && isRecording) fillFromSpeech(chunk);
+              }
+            }
+            if (isRecording) {
+              if (interim) voiceHint.textContent = 'Listening: ' + interim;
+            }
+          };
+
+          rec.onerror = function (ev) {
+            var em = (ev && ev.error) || '';
+            if (em === 'aborted' || em === 'no-speech') return;
+            voiceHint.textContent = 'Mic error: ' + (em || 'try again');
+            setRecordingUi(false);
+          };
+
+          rec.onend = function () {
+            if (isRecording) {
+              setTimeout(function () {
+                if (isRecording) {
+                  try { rec.start(); } catch (err) {
+                    setTimeout(function () {
+                      if (isRecording) { try { rec.start(); } catch (e) {} }
+                    }, 200);
+                  }
+                }
+              }, 0);
+            } else {
+              voiceBtn.textContent = 'Start Mic';
+              voiceBtn.classList.remove('recording');
+            }
+          };
+
+          voiceBtn.addEventListener('click', function () {
+            if (isRecording) {
+              setRecordingUi(false);
+              try { rec.stop(); } catch (e) {}
+              voiceHint.textContent =
+                'Stopped. Say a number to set quantity (e.g. 3 salt), or the item name again to +1. Edit list below as needed.';
+            } else {
+              voiceHint.textContent = '';
+              fullTranscript = '';
+              smartParseBtn.disabled = true;
+              setRecordingUi(true);
+              try { rec.start(); } catch (e) {
+                setRecordingUi(false);
+                voiceHint.textContent = 'Could not start mic: ' + (e && e.message ? e.message : e);
+              }
+            }
+          });
+        })();
+
+        smartParseBtn.addEventListener('click', function () {
+          if (!fullTranscript.trim()) return;
+          smartParseBtn.disabled = true;
+          var voiceHint = document.getElementById('voice-hint');
+          voiceHint.textContent = 'Parsing with AI…';
+          fetch('/api/parse-speech', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ transcript: fullTranscript })
           })
-          .filter(Boolean);
-        let msg = parts.join(', ');
-        const notes = (extraNotes.value || '').trim();
-        if (notes) msg = msg ? `${msg}. ${notes}` : notes;
-        return msg.trim();
-      }
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (_ref) {
+              if (!_ref.ok) {
+                voiceHint.textContent = 'AI parse error: ' + (_ref.j && _ref.j.error ? _ref.j.error : 'failed');
+                return;
+              }
+              var items = _ref.j.items;
+              if (items && items.length) {
+                setItemsFromObjects(items);
+                voiceHint.textContent = 'AI parsed ' + items.length + ' item(s) from transcript.';
+              } else {
+                voiceHint.textContent = 'AI found no items in transcript.';
+              }
+            })
+            .catch(function (e) {
+              voiceHint.textContent = 'Request failed: ' + e;
+            })
+            .finally(function () { smartParseBtn.disabled = !fullTranscript.trim(); });
+        });
 
-      document.getElementById('add-item').addEventListener('click', () => addItemRow());
-
-      addItemRow('', 1);
-
-      function closeStream() {
-        if (activeEs) {
-          activeEs.close();
-          activeEs = null;
+        function fillFromSpeech(text) {
+          var t = (text || '').trim();
+          if (!t) return;
+          fullTranscript += (fullTranscript ? ', ' : '') + t;
+          smartParseBtn.disabled = false;
+          var out = parseSpeechToItems(t);
+          if (out.length) appendOrMergeSpeechItems(out);
         }
-        runBtn.disabled = false;
-      }
 
-      document.getElementById('run').addEventListener('click', () => {
-        const message = buildMessage();
-        if (!message) return;
-        closeStream();
-        runBtn.disabled = true;
-        output.innerHTML = '<div>Running (streaming)…</div>';
+        runBtn.addEventListener('click', function () {
+          const message = buildMessage();
+          if (!message) return;
+          closeStream();
+          runBtn.disabled = true;
+          stepCounter = 0;
+          outputInner.innerHTML = '';
+          resetPipeline();
+          pipelineWrap.style.display = 'block';
 
-        const url = `/api/shop/stream?message=${encodeURIComponent(message)}`;
-        const es = new EventSource(url);
-        activeEs = es;
-        output.innerHTML = '';
+          const url = '/api/shop/stream?message=' + encodeURIComponent(message);
+          const es = new EventSource(url);
+          activeEs = es;
+          outputInner.appendChild(
+            elFromHtml(
+              '<p class="muted" style="margin:0 0 8px">Running (streaming)…</p>'
+            )
+          );
+          const statusLine = outputInner.firstChild;
 
-        es.onmessage = (e) => {
-          if (e.data === '[DONE]') {
-            closeStream();
-            return;
-          }
-          let payload;
-          try {
-            payload = JSON.parse(e.data);
-          } catch {
-            closeStream();
-            output.innerHTML = `<div>Error: invalid stream data</div>`;
-            return;
-          }
-          if (payload.error) {
-            output.innerHTML = `<div>Error: ${payload.error}</div>`;
-            closeStream();
-            return;
-          }
-          if (payload.done) {
-            renderLlmUsage(payload.llm_usage);
-            closeStream();
-            return;
-          }
-          renderStep(payload);
-        };
+          es.onmessage = function (e) {
+            if (e.data === '[DONE]') {
+              if (statusLine && statusLine.parentNode) statusLine.remove();
+              closeStream();
+              return;
+            }
+            var payload;
+            try {
+              payload = JSON.parse(e.data);
+            } catch (err) {
+              closeStream();
+              outputInner.innerHTML = '<div class="step-card">Error: invalid stream data</div>';
+              return;
+            }
+            if (statusLine && statusLine.parentNode) statusLine.remove();
+            if (payload.error) {
+              outputInner.innerHTML = '<div class="step-card">Error: ' + escapeHtml(payload.error) + '</div>';
+              closeStream();
+              return;
+            }
+            if (payload.done) {
+              renderLlmUsage(payload.llm_usage);
+              closeStream();
+              return;
+            }
+            renderStep(payload);
+          };
 
-        es.onerror = () => {
-          if (activeEs === es) {
-            output.insertAdjacentHTML('beforeend', '<div class="step">Stream ended or connection error.</div>');
-            closeStream();
-          }
-        };
-      });
-
-      function renderStep(step) {
-        const el = document.createElement('div');
-        el.className = 'step';
-        const badge = step.llm ? '<span class="pill">LLM</span>' : '<span class="pill">NO LLM</span>';
-        el.innerHTML = `<strong>${step.step}</strong> ${badge}`;
-        const pre = document.createElement('pre');
-        pre.textContent = JSON.stringify(step, null, 2);
-        el.appendChild(pre);
-        if (step.screenshot) {
-          const img = document.createElement('img');
-          img.src = step.screenshot;
-          el.appendChild(img);
-        }
-        output.appendChild(el);
-      }
-
-      function renderLlmUsage(llmUsage) {
-        if (!llmUsage) return;
-        const el = document.createElement('div');
-        el.className = 'step';
-        el.innerHTML = '<strong>LLM usage</strong>';
-        const pre = document.createElement('pre');
-        pre.textContent = JSON.stringify(llmUsage, null, 2);
-        el.appendChild(pre);
-        output.appendChild(el);
-      }
+          es.onerror = function () {
+            if (activeEs === es) {
+              outputInner.insertAdjacentHTML('beforeend', '<div class="step-card">Stream ended or connection error.</div>');
+              closeStream();
+            }
+          };
+        });
+      })();
     </script>
   </body>
 </html>
