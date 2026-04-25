@@ -4,121 +4,386 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>DMart Agentic Shopper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <style>
-      body { font-family: system-ui, Segoe UI, Arial, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; }
-      header { padding: 16px 24px; background: #111827; border-bottom: 1px solid #1f2937; }
-      main { max-width: 980px; margin: 0 auto; padding: 24px; }
-      .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-      textarea { width: 100%; min-height: 90px; border-radius: 8px; border: 1px solid #334155; padding: 10px; background: #0b1220; color: #e2e8f0; }
-      input[type="text"], input[type="number"] {
-        border-radius: 8px; border: 1px solid #334155; padding: 8px 10px; background: #0b1220; color: #e2e8f0;
-        box-sizing: border-box;
+      /* ── Tokens ────────────────────────────────── */
+      :root {
+        --bg:        #080e1a;
+        --surface:   #0e1725;
+        --surface2:  #131f30;
+        --border:    #1e2d42;
+        --border2:   #253650;
+        --text:      #e2eaf6;
+        --text-muted:#7a90b0;
+        --text-dim:  #4a607a;
+        --accent:    #3b82f6;
+        --accent-hi: #60a5fa;
+        --green:     #10b981;
+        --green-hi:  #34d399;
+        --teal:      #06b6d4;
+        --purple:    #8b5cf6;
+        --red:       #ef4444;
+        --red-dim:   #7f1d1d;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,.4);
+        --shadow-md: 0 4px 16px rgba(0,0,0,.5);
+        --shadow-lg: 0 8px 32px rgba(0,0,0,.6);
+        --radius:    14px;
+        --radius-sm: 8px;
       }
-      .item-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+
+      /* ── Reset / Base ──────────────────────────── */
+      *, *::before, *::after { box-sizing: border-box; }
+      body {
+        font-family: 'Inter', system-ui, Segoe UI, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        margin: 0;
+        min-height: 100vh;
+        background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(59,130,246,.12) 0%, transparent 70%);
+      }
+
+      /* ── Header ───────────────────────────────── */
+      header {
+        padding: 14px 28px;
+        background: rgba(14,23,37,.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 2px 20px rgba(0,0,0,.4);
+      }
+      .header-logo {
+        width: 36px; height: 36px;
+        background: linear-gradient(135deg, var(--accent), var(--teal));
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+        box-shadow: 0 0 14px rgba(59,130,246,.35);
+        flex-shrink: 0;
+      }
+      .header-brand { font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -.01em; }
+      .header-brand span { color: var(--accent-hi); }
+      .header-meta { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+      /* ── Layout ───────────────────────────────── */
+      main { max-width: 860px; margin: 0 auto; padding: 32px 20px 60px; }
+
+      /* ── Cards ────────────────────────────────── */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 22px 24px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow-md);
+        transition: border-color .2s;
+      }
+      .card:hover { border-color: var(--border2); }
+
+      /* ── Section headings ─────────────────────── */
+      .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+      .step-badge {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--teal));
+        color: #fff; font-size: 12px; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; box-shadow: 0 0 10px rgba(59,130,246,.4);
+      }
+      .section-title { font-size: 1.05rem; font-weight: 700; color: var(--text); margin: 0; }
+      .section-desc { margin: 0 0 16px; color: var(--text-muted); font-size: 13.5px; line-height: 1.6; padding-left: 38px; }
+
+      /* ── Pill / Badge ─────────────────────────── */
+      .pill {
+        display: inline-block; padding: 3px 10px; border-radius: 999px;
+        font-size: 11.5px; font-weight: 500;
+        background: var(--surface2); color: var(--text-muted);
+        border: 1px solid var(--border);
+      }
+      .pill.llm {
+        background: rgba(139,92,246,.15); color: #c4b5fd;
+        border-color: rgba(139,92,246,.3);
+      }
+      .pill.tech {
+        background: rgba(59,130,246,.12); color: var(--accent-hi);
+        border-color: rgba(59,130,246,.25);
+      }
+
+      /* ── Inputs ───────────────────────────────── */
+      textarea,
+      input[type="text"],
+      input[type="number"] {
+        background: var(--bg);
+        border: 1px solid var(--border2);
+        border-radius: var(--radius-sm);
+        padding: 9px 12px;
+        color: var(--text);
+        font-family: inherit;
+        font-size: 14px;
+        transition: border-color .18s, box-shadow .18s;
+        outline: none;
+      }
+      textarea { width: 100%; min-height: 80px; resize: vertical; }
+      textarea:focus,
+      input[type="text"]:focus,
+      input[type="number"]:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.18);
+      }
+      label { display: block; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; margin-top: 14px; }
+
+      /* ── Item rows ────────────────────────────── */
+      .item-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
       .item-row .item-name { flex: 1 1 200px; min-width: 160px; }
-      .item-row .item-qty { width: 72px; flex: 0 0 auto; }
-      button { background: #10b981; border: none; color: #0b1120; padding: 10px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-      button:disabled { opacity: 0.5; cursor: not-allowed; }
-      button.secondary { background: #334155; color: #e2e8f0; }
-      button.danger { background: #7f1d1d; color: #fecaca; padding: 8px 12px; }
-      .row-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
-      .step-card {
-        padding: 14px; border-bottom: 1px solid #1f2937;
-        animation: fadeIn 0.35s ease;
+      .item-row .item-qty  { width: 76px; flex: 0 0 auto; }
+
+      /* ── Buttons ──────────────────────────────── */
+      button {
+        font-family: inherit;
+        font-size: 13.5px;
+        font-weight: 600;
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 9px 16px;
+        cursor: pointer;
+        transition: filter .15s, transform .1s, box-shadow .15s;
+        white-space: nowrap;
       }
-      @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-      .step-card:last-child { border-bottom: none; }
-      .step-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-      .step-title { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
-      .check { color: #34d399; font-weight: bold; }
-      .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #1f2937; color: #cbd5f5; }
-      .pill.llm { background: #312e81; color: #c7d2fe; }
-      .step-body { color: #94a3b8; font-size: 14px; }
-      .product-chip { display: inline-flex; align-items: center; gap: 6px; background: #0b1220; border: 1px solid #334155; border-radius: 8px; padding: 6px 10px; margin: 4px 6px 4px 0; font-size: 13px; }
-      .product-chip img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
-      .muted { color: #64748b; font-size: 13px; }
-      .json-fallback { background: #0b1220; padding: 10px; border-radius: 8px; overflow: auto; font-size: 12px; color: #94a3b8; }
-      .step-shot { max-width: 100%; border-radius: 8px; margin-top: 8px; border: 1px solid #1f2937; }
-      .pre-inline { background: #0b1220; padding: 8px; border-radius: 8px; margin-top: 6px; font-size: 12px; }
-      .pipeline-wrap { margin-bottom: 12px; }
-      .pipeline-bar { height: 6px; background: #1f2937; border-radius: 999px; overflow: hidden; }
-      .pipeline-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 999px; transition: width 0.4s ease; }
-      .pipeline-labels { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-top: 6px; }
-      .pipeline-labels span.on { color: #34d399; font-weight: 600; }
-      .savings-card {
-        background: linear-gradient(135deg, #064e3b, #0f766e);
-        border: 1px solid #14b8a6;
-        border-radius: 12px; padding: 16px; margin-top: 10px;
+      button:active:not(:disabled) { transform: scale(.97); }
+      button:disabled { opacity: .45; cursor: not-allowed; }
+
+      /* primary */
+      button.primary,
+      #run {
+        background: linear-gradient(135deg, var(--accent), #2563eb);
+        color: #fff;
+        box-shadow: 0 0 16px rgba(59,130,246,.35), var(--shadow-sm);
+        letter-spacing: .01em;
       }
-      .savings-card strong { color: #ecfdf5; font-size: 1.4rem; }
-      .llm-usage { font-size: 12px; color: #94a3b8; margin-top: 8px; }
-      .upload-zone {
-        display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0;
-        padding: 12px; background: #0b1220; border: 1px dashed #334155; border-radius: 10px;
+      button.primary:hover:not(:disabled),
+      #run:hover:not(:disabled) {
+        filter: brightness(1.12);
+        box-shadow: 0 0 22px rgba(59,130,246,.5), var(--shadow-sm);
       }
-      .upload-zone img.preview { max-height: 80px; max-width: 120px; border-radius: 8px; object-fit: cover; border: 1px solid #334155; }
-      .input-hidden { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
-      .templates { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
-      .templates button { font-size: 12px; padding: 8px 12px; }
-      .section-title { font-size: 1.1rem; font-weight: 700; color: #f1f5f9; margin: 0 0 4px; padding-bottom: 8px; border-bottom: 1px solid #1f2937; }
-      .section-desc { margin: 0 0 12px; }
-      .voice-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 8px 0 12px; }
-      @keyframes recPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); } 50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.15); } }
+
+      /* secondary */
+      button.secondary, button:not(#run):not(.danger):not(.recording) {
+        background: var(--surface2);
+        color: var(--text);
+        border: 1px solid var(--border2);
+      }
+      button.secondary:hover:not(:disabled),
+      button:not(#run):not(.danger):not(.recording):hover:not(:disabled) {
+        background: #1a2a3e;
+        border-color: var(--accent);
+        color: var(--accent-hi);
+      }
+
+      /* danger */
+      button.danger {
+        background: rgba(127,29,29,.6);
+        color: #fca5a5;
+        border: 1px solid rgba(239,68,68,.25);
+        padding: 7px 11px;
+        font-size: 15px;
+        line-height: 1;
+      }
+      button.danger:hover:not(:disabled) { background: rgba(185,28,28,.7); border-color: var(--red); }
+
+      /* recording */
+      @keyframes recPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.55); } 50% { box-shadow: 0 0 0 7px rgba(239,68,68,.12); } }
       button.recording {
-        background: #dc2626; color: #fff;
-        animation: recPulse 1.5s ease-in-out infinite;
+        background: var(--red) !important; color: #fff !important;
+        border: none !important;
+        animation: recPulse 1.4s ease-in-out infinite;
       }
+
+      /* row actions */
+      .row-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+      .templates { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 16px; }
+      .templates button { font-size: 12px; padding: 7px 12px; }
+
+      /* ── Upload zone ──────────────────────────── */
+      .upload-zone {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+        padding: 14px; margin: 10px 0;
+        background: var(--bg);
+        border: 1.5px dashed var(--border2);
+        border-radius: 10px;
+        transition: border-color .2s;
+      }
+      .upload-zone:hover { border-color: var(--accent); }
+      .upload-zone img.preview { max-height: 80px; max-width: 120px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border2); }
+      .input-hidden { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
+      .voice-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 8px 0 14px; }
+
+      /* ── Pipeline bar ─────────────────────────── */
+      .pipeline-wrap { margin-bottom: 16px; }
+      .pipeline-bar  { height: 7px; background: var(--surface2); border-radius: 999px; overflow: hidden; border: 1px solid var(--border); }
+      @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+      .pipeline-fill {
+        height: 100%; width: 0%;
+        background: linear-gradient(90deg, var(--accent), var(--teal), var(--green));
+        background-size: 200% 100%;
+        animation: shimmer 2s linear infinite;
+        border-radius: 999px;
+        transition: width .5s cubic-bezier(.4,0,.2,1);
+        box-shadow: 0 0 8px rgba(59,130,246,.5);
+      }
+      .pipeline-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-top: 8px; font-weight: 500; }
+      .pipeline-labels span.on { color: var(--green-hi); }
+
+      /* ── Step cards ───────────────────────────── */
+      @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+      .step-card {
+        padding: 14px 16px;
+        border-radius: 10px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        margin-bottom: 10px;
+        animation: fadeUp .3s ease;
+        transition: border-color .2s;
+      }
+      .step-card:hover { border-color: var(--border2); }
+      .step-card:last-child { margin-bottom: 0; }
+      .step-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+      .step-title { display: flex; align-items: center; gap: 8px; font-size: .95rem; font-weight: 600; }
+      .step-icon {
+        width: 26px; height: 26px; border-radius: 7px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; flex-shrink: 0;
+      }
+      .step-icon.parse    { background: rgba(59,130,246,.18); }
+      .step-icon.match    { background: rgba(6,182,212,.18); }
+      .step-icon.disambig { background: rgba(139,92,246,.18); }
+      .step-icon.suggest  { background: rgba(245,158,11,.18); }
+      .step-icon.cart     { background: rgba(16,185,129,.18); }
+      .step-icon.summary  { background: rgba(236,72,153,.18); }
+      .step-icon.default  { background: rgba(100,116,139,.18); }
+      .check { color: var(--green-hi); font-size: 14px; }
+      .step-body { color: var(--text-muted); font-size: 13.5px; line-height: 1.6; }
+      .step-body p { margin: 4px 0; }
+      .step-body strong { color: var(--text); }
+
+      /* ── Misc ─────────────────────────────────── */
+      .muted { color: var(--text-muted); font-size: 13px; }
+      .product-chip {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: var(--bg); border: 1px solid var(--border2);
+        border-radius: 9px; padding: 7px 12px; margin: 4px 6px 4px 0;
+        font-size: 13px; font-weight: 500;
+        transition: border-color .15s;
+      }
+      .product-chip:hover { border-color: var(--green); }
+      .product-chip img { width: 34px; height: 34px; object-fit: cover; border-radius: 5px; }
+      .json-fallback { background: var(--bg); padding: 10px 12px; border-radius: 8px; overflow: auto; font-size: 12px; color: var(--text-muted); border: 1px solid var(--border); }
+      .step-shot { max-width: 100%; border-radius: 9px; margin-top: 10px; border: 1px solid var(--border2); box-shadow: var(--shadow-sm); }
+      .pre-inline { background: var(--bg); padding: 10px 12px; border-radius: 8px; margin-top: 8px; font-size: 12px; border: 1px solid var(--border); color: var(--text-muted); overflow: auto; }
+      .llm-usage { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+
+      /* savings card */
+      .savings-card {
+        background: linear-gradient(135deg, rgba(5,46,37,.8), rgba(6,95,70,.6));
+        border: 1px solid rgba(16,185,129,.35);
+        border-radius: 10px; padding: 14px 16px; margin-top: 10px;
+        box-shadow: 0 0 16px rgba(16,185,129,.1);
+      }
+      .savings-card strong { color: #ecfdf5; font-size: 1.5rem; font-weight: 800; }
+      .savings-card .sav-label { margin: 0 0 6px; color: #6ee7b7; font-size: 12.5px; font-weight: 500; }
+
+      /* stat rows in step body */
+      .stat-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 6px; }
+      .stat { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 6px 12px; font-size: 12.5px; }
+      .stat span { color: var(--text); font-weight: 700; }
+
+      /* output wrapper */
+      #output-inner { display: flex; flex-direction: column; gap: 0; }
+
+      /* divider */
+      hr.subtle { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
     </style>
   </head>
   <body>
     <script>
       window.__DMART_BASE__ = {{ dmart_base_url | tojson }};
     </script>
+
     <header>
-      <strong>DMart Agentic Shopper</strong> <span class="pill">Flask + Selenium + Groq</span>
+      <div class="header-logo">🛒</div>
+      <div>
+        <div class="header-brand"><span>DMart</span> Agentic Shopper</div>
+      </div>
+      <div class="header-meta">
+        <span class="pill tech">Flask</span>
+        <span class="pill tech">Selenium</span>
+        <span class="pill tech">Groq</span>
+      </div>
     </header>
+
     <main>
+      <!-- ── Section 1: Add Items ── -->
       <div class="card" id="section-add">
-        <h2 class="section-title">1. Add items</h2>
-        <p class="section-desc muted">Add by photo, voice, or quick-fill. The agent matches catalog products (higher-rated items win close ties).</p>
+        <div class="section-header">
+          <div class="step-badge">1</div>
+          <h2 class="section-title">Add items</h2>
+        </div>
+        <p class="section-desc">Add by photo, voice, or quick-fill. The agent matches catalog products — higher-rated items win close ties.</p>
+
         <div class="upload-zone" id="photo-zone">
           <input type="file" id="file-input" class="input-hidden" accept="image/*" />
           <input type="file" id="camera-input" class="input-hidden" accept="image/*" capture="environment" />
-          <button type="button" class="secondary" id="pick-photo">Choose photo</button>
-          <button type="button" class="secondary" id="take-photo">Camera</button>
+          <button type="button" class="secondary" id="pick-photo">📎 Choose photo</button>
+          <button type="button" class="secondary" id="take-photo">📷 Camera</button>
           <img class="preview" id="photo-preview" alt="" style="display: none" />
-          <button type="button" id="scan-list" class="secondary" disabled>Scan list</button>
+          <button type="button" id="scan-list" class="secondary" disabled>✨ Scan list</button>
         </div>
-        <p id="scan-status" class="muted" style="min-height: 1.2em"></p>
+        <p id="scan-status" class="muted" style="min-height: 1.2em; margin: 4px 0 10px;"></p>
+
         <div class="voice-row" id="voice-row">
-          <button type="button" class="secondary" id="voice-btn" title="Start/stop speech (Chrome/Edge)">Start Mic</button>
-          <button type="button" class="secondary" id="smart-parse-btn" disabled title="Re-parse full transcript with AI">Smart parse</button>
+          <button type="button" class="secondary" id="voice-btn" title="Start/stop speech (Chrome/Edge)">🎙 Start Mic</button>
+          <button type="button" class="secondary" id="smart-parse-btn" disabled title="Re-parse full transcript with AI">🤖 Smart parse</button>
           <span id="voice-hint" class="muted" style="font-size: 12px; flex: 1; min-width: 140px;"></span>
         </div>
+
         <div class="templates">
-          <span class="muted" style="align-self: center; margin-right: 4px;">Quick-fill:</span>
-          <button type="button" class="secondary" data-template="weekly">Weekly essentials</button>
-          <button type="button" class="secondary" data-template="party">Party supplies</button>
-          <button type="button" class="secondary" data-template="breakfast">Breakfast basics</button>
+          <span class="muted" style="align-self: center; margin-right: 4px; font-size: 12px;">Quick-fill:</span>
+          <button type="button" class="secondary" data-template="weekly">🛍 Weekly essentials</button>
+          <button type="button" class="secondary" data-template="party">🎉 Party supplies</button>
+          <button type="button" class="secondary" data-template="breakfast">🌅 Breakfast basics</button>
         </div>
       </div>
 
+      <!-- ── Section 2: Shopping list ── -->
       <div class="card" id="section-list">
-        <h2 class="section-title">2. Your shopping list</h2>
-        <p class="section-desc muted">Review and edit lines, add notes, then run the agent.</p>
+        <div class="section-header">
+          <div class="step-badge">2</div>
+          <h2 class="section-title">Your shopping list</h2>
+        </div>
+        <p class="section-desc">Review and edit items, add optional notes, then run the agent.</p>
+
         <div id="item-list"></div>
         <div class="row-actions">
-          <button type="button" class="secondary" id="add-item">Add item</button>
-          <button type="button" id="run">Run agent</button>
+          <button type="button" class="secondary" id="add-item">＋ Add item</button>
+          <button type="button" id="run">▶ Run agent</button>
         </div>
-        <label for="extra-notes" style="display:block; margin-top:16px;">Extra instructions (optional, e.g. &quot;Then checkout&quot;)</label>
+        <label for="extra-notes">Extra instructions <span class="muted" style="font-weight:400;">(optional — e.g. "Then checkout")</span></label>
         <textarea id="extra-notes" placeholder="Then checkout."></textarea>
       </div>
 
+      <!-- ── Section 3: Agent output ── -->
       <div class="card" id="output">
-        <h2 class="section-title">3. Agent output</h2>
-        <p class="section-desc muted" style="margin-top: 0; margin-bottom: 12px;">Streamed steps when the agent runs.</p>
+        <div class="section-header">
+          <div class="step-badge">3</div>
+          <h2 class="section-title">Agent output</h2>
+        </div>
+        <p class="section-desc" style="margin-bottom: 14px;">Streamed steps appear here in real time as the agent works.</p>
+
         <div class="pipeline-wrap" id="pipeline-wrap" style="display: none">
           <div class="pipeline-bar"><div class="pipeline-fill" id="pipeline-fill"></div></div>
           <div class="pipeline-labels" id="pipeline-labels">
@@ -128,7 +393,10 @@
             <span data-i="3">Review</span>
           </div>
         </div>
-        <div id="output-inner">Steps will appear here when you run the agent.</div>
+
+        <div id="output-inner">
+          <p class="muted" style="margin: 8px 0;">Steps will appear here when you run the agent.</p>
+        </div>
       </div>
     </main>
 
@@ -353,49 +621,66 @@
           }
         }
 
+        const STEP_META = {
+          parse:       { icon: '📋', cls: 'parse',    label: 'Parse' },
+          match:       { icon: '🔍', cls: 'match',    label: 'Match' },
+          disambiguate:{ icon: '🤔', cls: 'disambig', label: 'Disambiguate' },
+          suggest:     { icon: '💡', cls: 'suggest',  label: 'Suggest' },
+          add_to_cart: { icon: '🛒', cls: 'cart',     label: 'Add to cart' },
+          view_cart:   { icon: '🧾', cls: 'cart',     label: 'View cart' },
+          checkout:    { icon: '✅', cls: 'cart',     label: 'Checkout' },
+          summary:     { icon: '📊', cls: 'summary',  label: 'Summary' },
+        };
+
         let stepCounter = 0;
         function renderStep(step) {
           step._seq = stepCounter++;
+          const meta = STEP_META[step.step] || { icon: '⚙️', cls: 'default', label: step.step || 'step' };
           const el = document.createElement('div');
           el.className = 'step-card';
           el.dataset.step = step.step;
+
           const llmPill = step.llm
             ? '<span class="pill llm">LLM</span>'
             : '<span class="pill">No LLM</span>';
+
           const head = document.createElement('div');
           head.className = 'step-head';
           head.innerHTML =
-            '<div class="step-title"><span class="check">&#10003;</span> <strong>' +
-            escapeHtml(String(step.step || 'step')) +
-            '</strong> ' +
-            llmPill +
+            '<div class="step-title">' +
+              '<div class="step-icon ' + meta.cls + '">' + meta.icon + '</div>' +
+              '<strong>' + escapeHtml(meta.label) + '</strong>' +
+              llmPill +
             '</div>';
           el.appendChild(head);
+
           const body = document.createElement('div');
           body.className = 'step-body';
+
           if (step.step === 'parse' && step.items) {
             body.appendChild(
               elFromHtml(
-                '<p>Parsed ' + step.items.length + ' line(s): ' +
-                step.items.map(function (i) { return i.qty + '× ' + escapeHtml(i.item); }).join(', ') + '</p>'
+                '<p>Parsed <strong>' + step.items.length + '</strong> line(s): ' +
+                step.items.map(function (i) { return '<strong>' + i.qty + '×</strong> ' + escapeHtml(i.item); }).join(', ') + '</p>'
               )
             );
           } else if (step.step === 'match' && step.results) {
             const r = step.results;
-            const d = (r && r.debug_ranking) ? r.debug_ranking.length : 0;
             const exact = (r && r.exact) ? r.exact.length : 0;
             const amb = (r && r.ambiguous) ? r.ambiguous.length : 0;
             const nf = (r && r.not_found) ? r.not_found.length : 0;
             body.appendChild(
               elFromHtml(
-                '<p>Exact: ' + exact + ' · Ambiguous: ' + amb + ' · Not found: ' + nf + '</p>'
+                '<div class="stat-row">' +
+                  '<div class="stat">Exact <span>' + exact + '</span></div>' +
+                  '<div class="stat">Ambiguous <span>' + amb + '</span></div>' +
+                  '<div class="stat">Not found <span>' + nf + '</span></div>' +
+                '</div>'
               )
             );
           } else if (step.step === 'disambiguate' && step.item) {
             body.appendChild(
-              elFromHtml(
-                '<p>Resolved <em>' + escapeHtml(step.item) + '</em> using catalog candidates.</p>'
-              )
+              elFromHtml('<p>Resolved <em>' + escapeHtml(step.item) + '</em> using catalog candidates.</p>')
             );
             if (step.picked) {
               const pre = document.createElement('div');
@@ -439,18 +724,16 @@
               .join(' · ');
             body.appendChild(elFromHtml('<p>' + (lines || 'Cart viewed.') + '</p>'));
             if (c.subtotal != null) {
-              body.appendChild(elFromHtml('<p><strong>Subtotal:</strong> ₹' + c.subtotal + '</p>'));
+              body.appendChild(elFromHtml('<p><strong>Subtotal: ₹' + c.subtotal + '</strong></p>'));
             }
             if (c.savings != null && c.savings > 0) {
               const sav = document.createElement('div');
               sav.className = 'savings-card';
               sav.innerHTML =
-                '<p style="margin:0 0 8px; color: #a7f3d0; font-size: 13px;">You save vs MRP</p>' +
-                '<strong>₹' +
-                Number(c.savings).toFixed(0) +
-                '</strong>' +
+                '<p class="sav-label">You save vs MRP</p>' +
+                '<strong>₹' + Number(c.savings).toFixed(0) + '</strong>' +
                 (c.savingsPercent
-                  ? ' <span style="font-size: 14px; color: #a7f3d0">(' + c.savingsPercent + '% off MRP)</span>'
+                  ? ' <span style="font-size: 14px; color: #6ee7b7">(' + c.savingsPercent + '% off MRP)</span>'
                   : '') +
                 (c.totalMrp != null
                   ? '<p class="muted" style="margin: 8px 0 0; font-size: 12px;">MRP total ~₹' + Number(c.totalMrp).toFixed(0) + '</p>'
@@ -466,8 +749,11 @@
             const s = step.summary;
             body.appendChild(
               elFromHtml(
-                '<p><strong>Summary</strong><br/>' + escapeHtml(s.summary || '') + '</p>' +
-                '<p class="muted">Items: ' + (s.itemCount != null ? s.itemCount : '—') + ' · Subtotal: ₹' + (s.subtotal != null ? s.subtotal : '—') + '</p>'
+                '<p>' + escapeHtml(s.summary || '') + '</p>' +
+                '<div class="stat-row" style="margin-top:8px;">' +
+                  '<div class="stat">Items <span>' + (s.itemCount != null ? s.itemCount : '—') + '</span></div>' +
+                  '<div class="stat">Subtotal <span>₹' + (s.subtotal != null ? s.subtotal : '—') + '</span></div>' +
+                '</div>'
               )
             );
           } else {
@@ -476,6 +762,7 @@
             pre.textContent = JSON.stringify(step, null, 2);
             body.appendChild(pre);
           }
+
           el.appendChild(body);
           if (step.screenshot) {
             const img = document.createElement('img');
@@ -506,7 +793,9 @@
           if (!llmUsage) return;
           const el = document.createElement('div');
           el.className = 'step-card';
-          el.innerHTML = '<div class="step-title"><span class="check">&#10003;</span> <strong>LLM usage</strong></div>';
+          el.innerHTML =
+            '<div class="step-head"><div class="step-title">' +
+            '<div class="step-icon default">🤖</div><strong>LLM usage</strong></div></div>';
           const p = document.createElement('p');
           p.className = 'llm-usage';
           p.textContent = JSON.stringify(llmUsage);
@@ -545,7 +834,7 @@
           photoPreview.src = url;
           photoPreview.style.display = 'block';
           scanListBtn.disabled = false;
-          scanStatus.textContent = 'Image ready. Tap “Scan list” to read items with Groq vision.';
+          scanStatus.textContent = 'Image ready. Tap "Scan list" to read items with Groq vision.';
         }
         fileInput.addEventListener('change', function () {
           if (fileInput.files[0]) onFileSelected(fileInput.files[0]);
@@ -599,11 +888,11 @@
           function setRecordingUi(active) {
             isRecording = !!active;
             if (active) {
-              voiceBtn.textContent = 'Stop Mic';
+              voiceBtn.textContent = '⏹ Stop Mic';
               voiceBtn.classList.add('recording');
               if (!voiceHint.textContent) voiceHint.textContent = 'Listening…';
             } else {
-              voiceBtn.textContent = 'Start Mic';
+              voiceBtn.textContent = '🎙 Start Mic';
               voiceBtn.classList.remove('recording');
             }
           }
@@ -646,7 +935,7 @@
                 }
               }, 0);
             } else {
-              voiceBtn.textContent = 'Start Mic';
+              voiceBtn.textContent = '🎙 Start Mic';
               voiceBtn.classList.remove('recording');
             }
           };
